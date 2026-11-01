@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>那雅银月 - 音乐大厅</title>
+    <style>
+        /* 最精简的布局，绝对不会崩 */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: #f4f6f9; padding-top: 70px; display: flex; justify-content: center; }
+        .nav { position: fixed; top: 0; left: 0; width: 100%; height: 60px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 100; }
+        .nav a { color: #2b3a8e; text-decoration: none; margin-left: 15px; font-weight: bold; }
+        
+        .page { display: none; width: 100%; max-width: 900px; margin-top: 20px; }
+        .page.active { display: block; }
+        
+        /* 主页布局 */
+        .home-wrapper { display: flex; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .left-side { width: 45%; padding: 40px; background: #fafafa; border-right: 1px solid #eee; }
+        .left-side h1 { color: #2b3a8e; margin-bottom: 10px; }
+        .right-side { width: 55%; padding: 40px; }
+        
+        /* 表单样式 */
+        .form-box { display: none; }
+        .form-box.active { display: block; }
+        .form-box input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; }
+        .btn { width: 100%; padding: 12px; background: #2b3a8e; color: #fff; border: none; border-radius: 5px; margin-top: 15px; cursor: pointer; }
+        
+        /* 音乐大厅 */
+        .hall-wrapper { background: #fff; padding: 20px; border-radius: 10px; }
+        .tabs { display: flex; gap: 10px; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+        .tab { padding: 10px; cursor: pointer; color: #666; border: none; background: none; }
+        .tab.active { color: #2b3a8e; border-bottom: 3px solid #2b3a8e; font-weight: bold; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        .search-box input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .search-box button { padding: 0 20px; background: #2b3a8e; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .song-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        
+        /* 隐藏类 */
+        .hidden { display: none !important; }
+        /* 弹窗 */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 10px; text-align: center; min-width: 300px; }
+    </style>
+</head>
+<body>
+
+<!-- 弹窗 -->
+<div class="modal" id="myModal">
+    <div class="modal-content">
+        <h3 id="mTitle" style="margin-bottom: 10px;">提示</h3>
+        <p id="mText"></p>
+        <button class="btn" style="width: auto; padding: 8px 20px;" onclick="closeModal()">确定</button>
+    </div>
+</div>
+
+<!-- 导航 -->
+<div class="nav">
+    <div style="font-size: 1.2em; font-weight: bold; color: #2b3a8e;">那雅银月</div>
+    <div>
+        <a href="#" onclick="go('home')">主页</a>
+        <a href="#" onclick="go('hall')">音乐大厅</a>
+        <a href="#" id="navProfile" class="hidden" onclick="go('profile')">个人中心</a>
+        <a href="#" id="navLogout" class="hidden" style="color: red;" onclick="logout()">退出</a>
+    </div>
+</div>
+
+<!-- 1. 主页 -->
+<div id="page-home" class="page active">
+    <div class="home-wrapper">
+        <div class="left-side">
+            <h1>那雅银月</h1>
+            <p style="color:#666;">你的免费音乐库</p>
+        </div>
+        <div class="right-side">
+            <!-- 登录 -->
+            <div id="form-login" class="form-box active">
+                <h2 style="text-align: center; color: #2b3a8e; margin-bottom: 20px;">欢迎回来</h2>
+                <input type="text" id="l-account" placeholder="账号或邮箱">
+                <input type="password" id="l-pwd" placeholder="密码">
+                <button class="btn" onclick="doLogin()">登录</button>
+                <p style="text-align: center; margin-top: 15px;">
+                    <a href="#" onclick="switchForm('register')" style="color: #2b3a8e;">去注册</a>
+                </p>
+            </div>
+            <!-- 注册 -->
+            <div id="form-register" class="form-box">
+                <h2 style="text-align: center; color: #2b3a8e; margin-bottom: 20px;">注册账号</h2>
+                <input type="text" id="r-name" placeholder="昵称">
+                <input type="email" id="r-email" placeholder="邮箱">
+                <input type="password" id="r-pwd" placeholder="密码">
+                <button class="btn" onclick="doRegister()">注册</button>
+                <p style="text-align: center; margin-top: 15px;">
+                    <a href="#" onclick="switchForm('login')" style="color: #2b3a8e;">返回登录</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. 个人中心 -->
+<div id="page-profile" class="page">
+    <div style="background: #fff; padding: 40px; text-align: center; border-radius: 10px;">
+        <h1 style="font-size: 4em; margin-bottom: 10px;">👤</h1>
+        <h2 id="welcomeText" style="color: #333;">欢迎回来！</h2>
+        <button class="btn" style="width: auto; padding: 10px 20px; margin-top: 30px; background: #ffc107;" onclick="showModal('VIP', '暂未开放')">👑 VIP升级</button>
+        <button class="btn" style="width: auto; padding: 10px 20px; margin-top: 30px; background: #28a745;" onclick="showModal('设置', '功能开发中')">⚙️ 账号设置</button>
+        <button class="btn" style="width: auto; padding: 10px 20px; margin-top: 30px; background: #fd7e14;" onclick="showModal('收藏', '暂无收藏')">⭐ 收藏列表</button>
+    </div>
+</div>
+
+<!-- 3. 音乐大厅 -->
+<div id="page-hall" class="page">
+    <div class="hall-wrapper">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('netease', this)">网易云</button>
+            <button class="tab" onclick="switchTab('qq', this)">QQ音乐</button>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchKey" placeholder="输入歌曲或歌手名...">
+            <button onclick="doSearch()">搜索</button>
+        </div>
+        <div id="results" style="text-align: center; color: #999; padding: 20px;">输入关键词搜索</div>
+    </div>
+</div>
+
+<script>
+    // 你的两个核心地址
+    var PHP_URL = "https://naya.xo.je/api.php";
+    var PROXY_URL = "https://html-naya-c628.vercel.app/api/proxy";
+    var currentUser = null;
+    var currentSource = 'netease';
+
+    // 基础弹窗
+    function showModal(title, text) {
+        document.getElementById('mTitle').innerText = title;
+        document.getElementById('mText').innerText = text;
+        document.getElementById('myModal').classList.add('show');
+    }
+    function closeModal() {
+        document.getElementById('myModal').classList.remove('show');
+    }
+
+    // 页面切换
+    function go(page) {
+        if (page === 'profile' && !currentUser) return showModal('提示', '请先登录');
+        document.querySelectorAll('.page').forEach(function(el) { el.classList.remove('active'); });
+        document.getElementById('page-' + page).classList.add('active');
+    }
+
+    // 表单切换
+    function switchForm(type) {
+        document.querySelectorAll('.form-box').forEach(function(el) { el.classList.remove('active'); });
+        document.getElementById('form-' + type).classList.add('active');
+    }
+
+    // 核心网络请求 (请求 InfinityFree)
+    function api(data, callback) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", PHP_URL, true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try { callback(JSON.parse(xhr.responseText)); } 
+                catch(e) { callback({success: false, msg: '解析错误'}); }
+            } else if (xhr.readyState === 4) {
+                callback({success: false, msg: '后端连接失败，请确保 PHP 跨域已开启'});
+            }
+        };
+        var str = "";
+        for (var k in data) { str += k + "=" + encodeURIComponent(data[k]) + "&"; }
+        xhr.send(str);
+    }
+
+    // 登录
+    function doLogin() {
+        var acc = document.getElementById('l-account').value;
+        var pwd = document.getElementById('l-pwd').value;
+        if (!acc || !pwd) return showModal('提示', '请填写完整');
+        api({action:'login', account:acc, password:pwd}, function(res) {
+            if(res.success) { showModal('成功', '登录成功'); setTimeout(function(){location.reload();}, 1000); }
+            else { showModal('失败', res.msg); }
+        });
+    }
+
+    // 注册
+    function doRegister() {
+        var name = document.getElementById('r-name').value;
+        var email = document.getElementById('r-email').value;
+        var pwd = document.getElementById('r-pwd').value;
+        if (!name || !email || !pwd) return showModal('提示', '请填写完整');
+        api({action:'register', username:name, email:email, password:pwd}, function(res) {
+            if(res.success) { showModal('成功', '注册成功'); setTimeout(function(){switchForm('login');closeModal();}, 1000); }
+            else { showModal('失败', res.msg); }
+        });
+    }
+
+    // 退出
+    function logout() {
+        if(confirm('确定退出？')) {
+            api({action:'logout'}, function() { location.reload(); });
+        }
+    }
+
+    // 音乐切换与搜索
+    function switchTab(src, btn) {
+        currentSource = src;
+        document.querySelectorAll('.tab').forEach(function(el) { el.classList.remove('active'); });
+        btn.classList.add('active');
+    }
+
+    function doSearch() {
+        var key = document.getElementById('searchKey').value;
+        if(!key) return showModal('提示', '请输入关键词');
+        document.getElementById('results').innerHTML = "搜索中...";
+
+        var target = "";
+        if (currentSource === 'netease') {
+            target = "https://music.163.com/api/search/get/web?csrf_token=&s=" + encodeURIComponent(key) + "&type=1&offset=0&total=true&limit=10";
+        } else {
+            target = "https://c.y.qq.com/soso/fcgi-bin/client_search_cp?p=1&n=10&w=" + encodeURIComponent(key) + "&format=json";
+        }
+
+        // 通过 Vercel 代理请求
+        fetch(PROXY_URL + "?url=" + encodeURIComponent(target))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var list = [];
+            if (currentSource === 'netease' && data.result && data.result.songs) {
+                data.result.songs.forEach(function(s) { list.push({name: s.name, artist: s.artists[0].name}); });
+            } else if (currentSource === 'qq' && data.data && data.data.song && data.data.song.list) {
+                data.data.song.list.forEach(function(s) { list.push({name: s.songname, artist: s.singer[0].name}); });
+            }
+
+            if(list.length === 0) {
+                document.getElementById('results').innerHTML = "未搜到歌曲";
+            } else {
+                var html = "";
+                list.forEach(function(item) {
+                    html += "<div class='song-item'><div><b>" + item.name + "</b><br><span style='font-size:0.8em;color:#888;'>" + item.artist + "</span></div></div>";
+                });
+                document.getElementById('results').innerHTML = html;
+            }
+        }).catch(function(err) {
+            document.getElementById('results').innerHTML = "代理请求失败";
+        });
+    }
+
+    // 页面加载完成时检查登录状态
+    window.onload = function() {
+        api({action:'check_auth'}, function(res) {
+            if(res.success) {
+                currentUser = res.data.username;
+                document.getElementById('navProfile').classList.remove('hidden');
+                document.getElementById('navLogout').classList.remove('hidden');
+                document.getElementById('welcomeText').innerText = "你好，" + currentUser;
+            }
+        });
+    }
+</script>
+</body>
+</html>
